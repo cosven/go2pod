@@ -41,4 +41,12 @@
     - 先 `docker run -d $IMAGE`
     - 然后 `docker exec -it $CONTAINER_ID /bin/sh`  ？
 
+### 疑惑解答
 
+1. 配置文件中考虑下其他的参数，具体参数可以想一下有什么比较有用
+2. 需要编译代码
+3. 编译产物放入镜像中
+4. 一般的 golang 结构即可
+5. 编译过程在本地或镜像中都可以
+6. 基础镜像没要求，可以使用 alpine
+7. pod 是特指 k8s 的 pod
