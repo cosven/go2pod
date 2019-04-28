@@ -43,9 +43,11 @@ class Action:
             echo(s + Fore.GREEN + 'ok' + Fore.RESET)
 
     def fail(self, msg=''):
+        # pylint: disable=no-self-use
         raise ActionFailed(msg)
 
     def warn(self, msg=''):
+        # pylint: disable=no-self-use
         raise ActionWarning(msg)
 
     def ensure_true(self, condition, msg='', warn_only=True):

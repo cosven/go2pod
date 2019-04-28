@@ -1,6 +1,3 @@
-
-
-
 def gen_dockerfile(config):
     dockerfile = []
     import_path = config.import_path
@@ -15,3 +12,9 @@ def gen_dockerfile(config):
     dockerfile.append('RUN {}'.format(' && '.join(commands)))
     dockerfile.append('')
     return '\n'.join(dockerfile)
+
+
+def gen_pod_yaml():
+    """
+    use jinja2 maybe?
+    """
