@@ -103,3 +103,7 @@ venv.bak/
 
 # mypy
 .mypy_cache/
+
+# go2pod
+go2pod.yml
+tmp-go2pod/

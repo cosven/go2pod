@@ -31,6 +31,8 @@ base_image: golang:1.12.4-alpine
 build:
     env:
         GO111MODULE: auto
+        # HTTP_PROXY: http://172.17.0.1:8123
+        # HTTPS_PROXY: http://172.17.0.1:8123
     commands:
         - go build
 
