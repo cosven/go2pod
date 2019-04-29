@@ -3,7 +3,7 @@
 [![Documentation Status](https://readthedocs.org/projects/go2pod/badge/?version=latest)](https://go2pod.readthedocs.io/en/latest/?badge=latest)
 
 go2pod is a command line tool that can build GitHub golang project
-and deploy it on Kubernete.
+and deploy it on Kubernetes.
 
 For more information, refer to [the documentation](https://go2pod.readthedocs.io).
 
@@ -15,21 +15,30 @@ go2pod is published on PyPI and can be installed from there:
 pip3 install go2pod
 ```
 
-## Usage
+## Quick Start
+
+1. Create go2pod configuration file template
 
 ```sh
-go2pod init  # this will create go2pod.yml
+go2pod init
+```
 
-# edit the go2pod.yml
+2. Edit the [go2pod.yml](https://go2pod.readthedocs.io/en/latest/configuration.html)
 
-go2pod       # build docker image and create pod
+3. Build docker image and create kubernetes pod
+
+```
+go2pod
 ```
 
 If you want to customize the build or deploy process, you can
 run go2pod command step by step.
 
 ```sh
-# build the docker image and create the pod.yml
+# prepare Dockerfile and pod.yml
+go2pod prepare
+
+# build the docker image
 go2pod build
 
 # edit the pod.yml and run deploy command
