@@ -3,18 +3,16 @@
    You can adapt this file completely to your liking, but it should at least
    contain the root `toctree` directive.
 
-Welcome to go2pod's documentation!
+go2pod 使用与设计文档
 ==================================
+
+go2pod 是一个一键构建部署 GitHub 上 golang 项目的工具。
 
 .. toctree::
    :maxdepth: 2
-   :caption: Contents:
+   :caption: 目录:
 
+   configuration
+   thinking
    research
-
-Indices and tables
-==================
-
-* :ref:`genindex`
-* :ref:`modindex`
-* :ref:`search`
+   todo
