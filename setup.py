@@ -5,7 +5,7 @@ from setuptools import setup
 
 setup(
     name='go2pod',
-    version='0.1.dev0',
+    version='0.1',
     description='golang project to kubernetes pod',
     author='Cosven',
     author_email='yinshaowen241@gmail.com',
