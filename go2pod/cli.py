@@ -1,16 +1,16 @@
-import os
+import argparse
+import textwrap
 
 from colorama import init
 
-from go2pod.action import Action
-from go2pod.template import gen_dockerfile, gen_pod_yaml
-from go2pod.ensure import (
-    ensure_prerequisites,
-    ensure_docker,
-    ensure_config,
-    ensure_tmpdir,
+from go2pod.cmds import (
+    run_init,
+    run_prepare,
+    run_build,
+    run_deploy,
+    run_all_,
 )
-from go2pod.kube import KubeClient
+from go2pod.ensure import ensure_prerequisites
 from go2pod.patch import patch_delegator
 
 
@@ -18,36 +18,42 @@ init()
 patch_delegator()
 
 
-def build_docker_image(client, config, tmpdir):
-    dockerfile_path = os.path.join(tmpdir, 'Dockerfile')
-    with open(dockerfile_path, 'w') as f:
-        f.write(gen_dockerfile(config))
-    action_desc = 'Building docker image, this may take several minutes'
-    with Action(action_desc).start() as action:
-        action.ensure_true(client.build(tmpdir, config.image),
-                           'Build docker image failed.')
-
-
-def push_docker_image(client, config):
-    client.push(config.image)
-
-
-def create_pod(client, config, tmpdir):
-    podyaml_path = os.path.join(tmpdir, 'pod.yaml')
-    with open(podyaml_path, 'w') as f:
-        f.write(gen_pod_yaml(config))
-    with Action('Sending pod creation request').start() as action:
-        action.ensure_true(client.apply_yaml(podyaml_path))
+def setup_argparse():
+    parser = argparse.ArgumentParser(
+        description=textwrap.dedent('''\
+        go2pod - build GitHub golang project and deploy it on K8s.
+        '''),
+        formatter_class=argparse.RawTextHelpFormatter,
+        prog='go2pod')
+    parser.add_argument('-V', '--version', action='version',
+                        version='%(prog)s 0.1')
+    subparsers = parser.add_subparsers(dest='cmd')
+    subparsers.add_parser('init', description='create go2pod.yml template')
+    subparsers.add_parser('prepare',
+                          description='prepare Dockerfile and pod.yml')
+    subparsers.add_parser('build', description='build docker image')
+    subparsers.add_parser('deploy', description='deploy image on K8s')
+    return parser
 
 
 def main():
-    ensure_prerequisites()
-    docker_client = ensure_docker()
-    kube_client = KubeClient()
+    parser = setup_argparse()
+    args = parser.parse_args()
 
-    config = ensure_config()
-    tmpdir = ensure_tmpdir()
+    if args.cmd is not None:
+        if args.cmd == 'init':
+            run_init()
+            return
 
-    build_docker_image(docker_client, config, tmpdir)
-    push_docker_image(docker_client, config)
-    create_pod(kube_client, config, tmpdir)
+    try:
+        ensure_prerequisites()
+        if args.cmd == 'prepare':
+            run_prepare()
+        elif args.cmd == 'build':
+            run_build()
+        elif args.cmd == 'deploy':
+            run_deploy()
+        else:
+            run_all_()
+    except KeyboardInterrupt:
+        raise SystemExit('exit.')

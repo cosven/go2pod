@@ -9,7 +9,7 @@ setup(
     description='golang project to kubernetes pod',
     author='Cosven',
     author_email='yinshaowen241@gmail.com',
-    packages=['go2pod'],
+    packages=['go2pod', 'go2pod.cmds'],
     package_data={'': ['templates/*.template']},
     url='https://github.com/cosven/go2pod',
     keywords=['golang', 'kubernetes', 'pod'],

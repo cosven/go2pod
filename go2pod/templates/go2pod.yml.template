@@ -1,0 +1,44 @@
+#
+# http://go2pod.readthedocs.io
+#
+
+# declare go2pod configuration version
+version: 1.0
+
+# NOTE:
+#
+# You MUST set the correct GitHub address in `url` field.
+# Additionally, you SHOULD also edit the `image` field
+# and set your own private registry.
+url: https://github.com/NAMESPACE/REPO
+# for example:
+# url: https://github.com/elves/elvish
+# url: https://github.com/elves/elvish/tree/d1421bbe60c33d8b8c96a6717cbfc3916bffced3
+
+# we will use REPO as name by default
+# name: hello-world
+
+# you can use other alpine image
+base_image: golang:1.12.4-alpine
+
+# specify project dependency if needed
+# apk:
+#   packages:
+#     - make
+#     - openssl-dev
+
+# you can use {name} and {version} variable in image field
+# please ensure that you have push access to the docker registry
+# image: 'localhost:5000/{name}:{version}-go2pod'
+
+build:
+  # specify some build environment variables
+  #
+  # env:
+  #   # GO111MODULE: 'on'
+  #   http_proxy: http://172.17.0.1:8123
+  #   https_proxy: http://172.17.0.1:8123
+  commands:
+    # you can retry ``go build`` like this, if needed Q.Q
+    # - go build || go build || go build
+    - go build

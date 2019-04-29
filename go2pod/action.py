@@ -39,6 +39,7 @@ class Action:
             raise SystemExit('Prerequisites checking failed, exit.')
         except KeyboardInterrupt:
             echo(s + Fore.YELLOW + 'cancelled' + Fore.RESET)
+            raise
         else:
             echo(s + Fore.GREEN + 'ok' + Fore.RESET)
 
@@ -50,7 +51,7 @@ class Action:
         # pylint: disable=no-self-use
         raise ActionWarning(msg)
 
-    def ensure_true(self, condition, msg='', warn_only=True):
+    def ensure_true(self, condition, msg='', warn_only=False):
         """like assert, but raise ActionError instead when failed"""
         if not condition:
             if not warn_only:

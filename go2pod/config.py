@@ -15,6 +15,12 @@ schema = {
         'url': {'type': 'string'},
         'name': {'type': 'string'},
         'base_image': {'type': 'string'},
+        'apk': {
+            'type': 'object',
+            'properties': {
+                'packages': {'type': 'array'},
+            }
+        },
         'build': {
             'type': 'object',
             'properties': {
@@ -60,10 +66,24 @@ def _parse_github_url(url):
 
 class Config:
 
-    def __init__(self, yml_data):
+    def __init__(self, yml_data, version=None):
         self._yml_data = yml_data
         self._build = self._yml_data.get('build', {})
+        self._apk = self._yml_data.get('apk', {})
         self.git_info = _parse_github_url(self.url)
+
+        # If commit is a 40 digits sha-1 hash, we only use the
+        # first 7 digits, which is enough for most projects
+        # and the early git use only 7 hex digits for hash
+        commit = self.git_info['commit']
+        sha1_regex = re.compile(r'[0-9a-f]{40}')
+        if sha1_regex.match(commit) is not None:
+            self._version = commit[:7]
+        else:
+            if version is None:
+                self._version = commit + '-' + str(int(time.time()))
+            else:
+                self._version = version
 
     @property
     def name(self):
@@ -76,19 +96,16 @@ class Config:
 
     @property
     def version(self):
-        # If commit is a 40 digits sha-1 hash, we only use the
-        # first 7 digits, which is enough for most projects
-        # and the early git use only 7 hex digits for hash
-        commit = self.git_info['commit']
-        sha1_regex = re.compile(r'[0-9a-f]{40}')
-        if sha1_regex.match(commit) is not None:
-            commit = commit[:7]
-        return commit + '-' + str(int(time.time()))
+        return self._version
 
     @property
     def base_image(self):
         default = 'golang:1.12.4-alpine'
         return self._yml_data.get('base_image', default)
+
+    @property
+    def apk_packages(self):
+        return self._apk.get('packages', []) + ['wget', 'git']
 
     @property
     def build_env(self):
@@ -108,7 +125,7 @@ class Config:
         return image
 
     @classmethod
-    def load(cls, path):
+    def load(cls, path, version=None):
         try:
             with open(path) as f:
                 data = yaml.safe_load(f)
@@ -121,4 +138,4 @@ class Config:
         except ValidationError as e:
             msg = "field '#/{}': {}".format('/'.join(e.path), e.message)
             raise ConfigLoadError(msg)
-        return cls(data)
+        return cls(data, version=version)
