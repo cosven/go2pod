@@ -1,4 +1,6 @@
-from go2pod.utils import run
+import delegator
+
+from go2pod.utils import echo
 
 
 class DockerClient:
@@ -27,9 +29,24 @@ class DockerClient:
         cmdstr = 'build {}'.format(path)
         if image is not None:
             cmdstr += ' -t {}'.format(image)
-        cmdstr = self._decorate_cmd(cmdstr)
-        cmd = run(cmdstr)
+        cmd = self._run(cmdstr)
         return cmd.ok
+
+    def push(self, image):
+        cmdstr = 'push {}'.format(image)
+        return self._run(cmdstr).ok
+
+    def _run(self, cmdstr):
+        cmdstr = self._decorate_cmd(cmdstr)
+        cmd = delegator.run(cmdstr, block=False, timeout=None)
+        while 1:
+            out = cmd.subprocess.readline()
+            if out:
+                echo(out, end='')
+            else:
+                break
+        cmd.block()
+        return cmd
 
     def _decorate_cmd(self, cmdstr):
         if self.need_sudo:

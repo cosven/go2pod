@@ -1,5 +1,5 @@
 import re
-from urllib.parse import urlparse
+import time
 
 import yaml
 from jsonschema import validate
@@ -8,46 +8,12 @@ from jsonschema.exceptions import ValidationError
 from go2pod.exc import Go2podException
 
 
-config_yaml_tmpl = """\
-#
-# http://go2pod.readthedocs.io
-#
-version: 1.0
-url: https://github.com/OWNER/NAME
-
-base_image: golang:1.12.4-alpine
-
-# name: hello-world
-# image: registry-host:port/{name}:latest-go2pod
-
-build:
-    env:
-        GO111MODULE: auto
-        HTTP_PROXY: http://172.17.0.1:8123
-        HTTPS_PROXY: http://172.17.0.1:8123
-    commands:
-        - go build
-
-# build artifacts
-artifacts:
-    - ./tidb-server/tidb-server
-
-# Pod configuration
-#
-# we will always add a container "{name}-go2pod" to this pod.
-#
-# pod:
-#     apiVersion: v1
-#     kind: Pod
-#     metadata:
-#         name: {name}-go2pod
-"""
-
 schema = {
     'type': 'object',
     'properties': {
         'version': {'type': 'number'},
         'url': {'type': 'string'},
+        'name': {'type': 'string'},
         'base_image': {'type': 'string'},
         'build': {
             'type': 'object',
@@ -65,55 +31,88 @@ class ConfigLoadError(Go2podException):
     pass
 
 
+def _parse_github_url(url):
+    url_regex = re.compile(
+        r'(https?://)?(github.com/[\w\d_\.-]+/[\w\d_\.-]+)'
+        r'(/tree/[\w\d_\.-]+)?'
+    )
+    m = url_regex.match(url)
+    if m is None:
+        raise ConfigLoadError('invalid github url')
+    g1, g2, g3 = m.groups()
+    g1 = g1 or 'https://'
+    g3 = g3 or 'tree/master'
+    git_commit = g3.split('/')[-1]
+    zip_url = g1 + g2 + '/archive/' + git_commit + '.zip'
+    git_host, git_namespace, git_name = g2.split('/')
+    zip_dirname = '{}-{}'.format(git_name, git_commit)
+
+    git_info = {
+        'host': git_host,
+        'namespace': git_namespace,
+        'name': git_name,
+        'commit': git_commit,
+        'zip_url': zip_url,
+        'zip_dirname': zip_dirname,
+    }
+    return git_info
+
+
 class Config:
 
     def __init__(self, yml_data):
         self._yml_data = yml_data
-
-        result = urlparse(self._yml_data['url'])
-        self._import_path = result.netloc + result.path
-        self._name = result.path.split('/')[-1]
+        self._build = self._yml_data.get('build', {})
+        self.git_info = _parse_github_url(self.url)
 
     @property
     def name(self):
-        return self._name
-
-    @property
-    def import_path(self):
-        return self._import_path
+        default = self.git_info['name']
+        return self._yml_data.get('name', default)
 
     @property
     def url(self):
         return self._yml_data['url']
 
     @property
-    def build(self):
-        return self._yml_data.get('build', {})
+    def version(self):
+        # If commit is a 40 digits sha-1 hash, we only use the
+        # first 7 digits, which is enough for most projects
+        # and the early git use only 7 hex digits for hash
+        commit = self.git_info['commit']
+        sha1_regex = re.compile(r'[0-9a-f]{40}')
+        if sha1_regex.match(commit) is not None:
+            commit = commit[:7]
+        return commit + '-' + str(int(time.time()))
 
     @property
     def base_image(self):
-        return self._yml_data.get('base_image', 'golang:1.12.4-alpine')
+        default = 'golang:1.12.4-alpine'
+        return self._yml_data.get('base_image', default)
 
     @property
     def build_env(self):
-        return self.build.get('env', {})
+        return self._build.get('env', {})
 
     @property
     def build_commands(self):
-        return self.build.get('commands', [])
+        default = ['go build']
+        return self._build.get('commands', default)
 
     @property
     def image(self):
-        tag = 'latest-go2pod'
-        default = '{}:{}'.format(self.name, tag)
-        return self._yml_data.get('image', default)
+        default = '{name}:{version}-go2pod'
+        image_tpl = self._yml_data.get('image', default)
+        image = image_tpl.format(name=self.name,
+                                 version=self.version)
+        return image
 
     @classmethod
     def load(cls, path):
         try:
             with open(path) as f:
-                data = yaml.load(f, Loader=yaml.Loader)
-        except yaml.YAMLError:
+                data = yaml.safe_load(f)
+        except yaml.YAMLError as e:
             raise ConfigLoadError('invalid yaml config file')
 
         # check config version, validate and deserialize
@@ -122,15 +121,4 @@ class Config:
         except ValidationError as e:
             msg = "field '#/{}': {}".format('/'.join(e.path), e.message)
             raise ConfigLoadError(msg)
-        cls.validate(data)
         return cls(data)
-
-    @classmethod
-    def validate(cls, data):
-        cls.validate_url(data['url'])
-
-    @classmethod
-    def validate_url(cls, url):
-        p = re.compile(r'(?:https?://)?github.com/[\w\d_\.-]+/[\w\d_\.-]+')
-        if p.match(url) is None:
-            raise ConfigLoadError('invalid github repo url')
