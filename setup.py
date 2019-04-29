@@ -22,7 +22,9 @@ setup(
         'colorama>=0.4',
         # it seems that delegator may have api breakchange in future version,
         # so we set the highest version here.
-        'delegator.py<0.2'
+        'delegator.py<0.2',
+        'pyyaml>=5.1',
+        'jsonschema>=3.0.1',
     ],
     extras_require={},
     tests_require=['pytest'],
