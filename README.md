@@ -7,7 +7,7 @@ and deploy it on Kubernetes.
 
 For more information, refer to [the documentation](https://go2pod.readthedocs.io).
 
-## Install
+## Installation
 
 go2pod is published on PyPI and can be installed from there:
 
